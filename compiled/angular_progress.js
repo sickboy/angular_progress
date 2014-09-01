@@ -51,13 +51,10 @@
               scope.requestInProgress = false;
               scope.requestSucceeded = false;
               scope.requestFailed = true;
-              if (!scope.singleUse) {
-              	return $timeout(scope.revertToOriginal, 5000);
-          	  }
-            } else if (!scope.singleUse) {
+          	  return $timeout(scope.revertToOriginal, 5000);
+            } else {
               return scope.revertToOriginal();
             }
-            return false;
           };
           scope.$on('startHttpProgress', function(event, target) {
             if (scope.requestName !== target.requestName) {
