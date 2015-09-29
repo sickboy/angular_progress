@@ -6,10 +6,13 @@ angular.module('AngularProgress').directive 'httpProgress', [ '$timeout', '$sce'
 <div ng-transclude ng-show="!requestInProgress && !requestSucceeded && !requestFailed"></div>
             """
   restrict: 'AE'
-  scope: {}
+  scope: {
+    httpProcessing: '='
+  }
   transclude: true
   link: (scope, element, attributes, controller) ->
     scope.requestName = attributes.requestName || attributes.httpProgress
+    scope.singleUse = attributes.httpSingleUse
     scope.requestCount = 0
     scope.httpOnSuccess = $sce.trustAsHtml(attributes.httpSuccess)
     scope.httpOnError = $sce.trustAsHtml(attributes.httpError)
@@ -22,14 +25,16 @@ angular.module('AngularProgress').directive 'httpProgress', [ '$timeout', '$sce'
       scope.requestInProgress = false
       scope.requestSucceeded = false
       scope.requestFailed = false
+      scope.httpProcessing = false
 
     scope.httpProgressSuccess = ->
       if scope.httpOnSuccess
         scope.requestInProgress = false
         scope.requestSucceeded = true
         scope.requestFailed = false
-        $timeout(scope.revertToOriginal, 3000)
-      else
+        if !scope.singleUse
+          $timeout(scope.revertToOriginal, 3000)
+      else if !scope.singleUse
         scope.revertToOriginal()
 
     scope.httpProgressError = ->
@@ -47,6 +52,7 @@ angular.module('AngularProgress').directive 'httpProgress', [ '$timeout', '$sce'
       if scope.requestCount >= 1
         scope.revertToOriginal()
         scope.requestInProgress = true
+        scope.httpProcessing = true
 
     scope.$on 'stopHttpProgress', (event, target) ->
       return unless scope.requestName is target.requestName

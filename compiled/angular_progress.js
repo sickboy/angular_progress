@@ -13,10 +13,13 @@
       return {
         template: "<div ng-show=\"requestInProgress\" ng-bind-html=\"httpPending\"></div>\n<div ng-show=\"requestSucceeded\" ng-bind-html=\"httpOnSuccess\"></div>\n<div ng-show=\"requestFailed\" ng-bind-html=\"httpOnError\"></div>\n<div ng-transclude ng-show=\"!requestInProgress && !requestSucceeded && !requestFailed\"></div>",
         restrict: 'AE',
-        scope: {},
+        scope: {
+        	httpProcessing: '='
+        },
         transclude: true,
         link: function(scope, element, attributes, controller) {
           scope.requestName = attributes.requestName || attributes.httpProgress;
+          scope.singleUse = attributes.httpSingleUse;
           scope.requestCount = 0;
           scope.httpOnSuccess = $sce.trustAsHtml(attributes.httpSuccess);
           scope.httpOnError = $sce.trustAsHtml(attributes.httpError);
@@ -27,6 +30,7 @@
           scope.revertToOriginal = function() {
             scope.requestInProgress = false;
             scope.requestSucceeded = false;
+            scope.httpProcessing = false;
             return scope.requestFailed = false;
           };
           scope.httpProgressSuccess = function() {
@@ -34,17 +38,20 @@
               scope.requestInProgress = false;
               scope.requestSucceeded = true;
               scope.requestFailed = false;
-              return $timeout(scope.revertToOriginal, 3000);
-            } else {
+              if (!scope.singleUse) {
+              	return $timeout(scope.revertToOriginal, 3000);
+              }
+            } else if (!scope.singleUse) {
               return scope.revertToOriginal();
             }
+            return false;
           };
           scope.httpProgressError = function() {
             if (scope.httpOnError) {
               scope.requestInProgress = false;
               scope.requestSucceeded = false;
               scope.requestFailed = true;
-              return $timeout(scope.revertToOriginal, 5000);
+          	  return $timeout(scope.revertToOriginal, 5000);
             } else {
               return scope.revertToOriginal();
             }
@@ -56,6 +63,7 @@
             scope.requestCount += 1;
             if (scope.requestCount >= 1) {
               scope.revertToOriginal();
+              scope.httpProcessing = true
               return scope.requestInProgress = true;
             }
           });
